@@ -50,6 +50,8 @@ export default function Library({ onOpenBook, onOpenSettings }) {
         type: isPdf ? 'pdf' : 'epub',
         words: extracted.words,
         totalWords: extracted.words.length,
+        chapters: extracted.chapters || [],
+        pageStarts: extracted.pageStarts || null,
         addedAt: Date.now(),
       };
 
