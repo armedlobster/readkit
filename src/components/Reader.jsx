@@ -181,12 +181,11 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
               gridTemplateColumns: '42fr auto 58fr',
               gridTemplateRows: 'auto auto auto',
               alignItems: 'center',
-              justifyItems: 'center',
               width: '100%',
               rowGap: 14,
             }}
           >
-            <div style={{ gridColumn: 2, gridRow: 1, width: 2, height: 14, background: 'var(--border)' }} />
+            <div style={{ gridColumn: 2, gridRow: 1, justifySelf: 'center', width: 2, height: 14, background: 'var(--border)' }} />
             <span
               style={{
                 gridColumn: 1,
@@ -231,7 +230,7 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
             >
               {currentChunk[0]?.slice(orpIndex(currentChunk[0] || '') + 1)}
             </span>
-            <div style={{ gridColumn: 2, gridRow: 3, width: 2, height: 14, background: 'var(--border)' }} />
+            <div style={{ gridColumn: 2, gridRow: 3, justifySelf: 'center', width: 2, height: 14, background: 'var(--border)' }} />
           </div>
         ) : (
           <>
