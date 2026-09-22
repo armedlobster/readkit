@@ -14,6 +14,24 @@ function seekSentence(words, fromIndex, direction) {
   return Math.min(words.length - 1, i + 1);
 }
 
+// PDF text extraction doesn't reliably preserve sentence punctuation (running
+// headers, footers, column breaks), so page boundaries are a steadier unit
+// to step through than "sentences" for PDFs.
+function pageAt(pageStarts, wordIndex) {
+  let page = 0;
+  for (let i = 0; i < pageStarts.length; i++) {
+    if (pageStarts[i] <= wordIndex) page = i;
+    else break;
+  }
+  return page;
+}
+
+function seekPage(pageStarts, fromIndex, direction) {
+  const cur = pageAt(pageStarts, fromIndex);
+  const target = direction < 0 ? Math.max(0, cur - 1) : Math.min(pageStarts.length - 1, cur + 1);
+  return pageStarts[target];
+}
+
 export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenContents }) {
   const [book, setBook] = useState(null);
   const [wordIndex, setWordIndex] = useState(0);
@@ -54,8 +72,11 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
 
   const words = book?.words ?? [];
   const totalWords = book?.totalWords ?? 0;
+  const pageStarts = book?.pageStarts;
+  const hasPages = book?.type === 'pdf' && Array.isArray(pageStarts) && pageStarts.length > 0;
   const currentChunk = useMemo(() => words.slice(wordIndex, wordIndex + chunkSize), [words, wordIndex, chunkSize]);
   const finished = totalWords > 0 && wordIndex >= totalWords;
+  const currentPage = hasPages ? pageAt(pageStarts, wordIndex) + 1 : null;
 
   // Playback loop.
   useEffect(() => {
@@ -173,6 +194,7 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
         )}
         <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
         <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
+          {hasPages && `page ${currentPage} of ${pageStarts.length} · `}
           word {Math.min(wordIndex + 1, totalWords).toLocaleString()} of {totalWords.toLocaleString()}
         </div>
       </div>
@@ -203,8 +225,8 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 28, padding: '18px 0 calc(30px + env(safe-area-inset-bottom, 0px)) 0' }}>
         <button
           className="icon-btn"
-          aria-label="Back one sentence"
-          onClick={() => setWordIndex((i) => seekSentence(words, i, -1))}
+          aria-label={hasPages ? 'Previous page' : 'Back one sentence'}
+          onClick={() => setWordIndex((i) => (hasPages ? seekPage(pageStarts, i, -1) : seekSentence(words, i, -1)))}
           style={{ width: 48, height: 48 }}
         >
           <PrevIcon color="var(--text)" />
@@ -229,8 +251,8 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
         </button>
         <button
           className="icon-btn"
-          aria-label="Forward one sentence"
-          onClick={() => setWordIndex((i) => seekSentence(words, i, 1))}
+          aria-label={hasPages ? 'Next page' : 'Forward one sentence'}
+          onClick={() => setWordIndex((i) => (hasPages ? seekPage(pageStarts, i, 1) : seekSentence(words, i, 1)))}
           style={{ width: 48, height: 48 }}
         >
           <NextIcon color="var(--text)" />

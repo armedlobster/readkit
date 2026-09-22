@@ -58,7 +58,7 @@ export default function Library({ onOpenBook, onOpenSettings }) {
       onOpenBook(book.id);
     } catch (err) {
       console.error('Import failed', err);
-      alert('Could not read that file. Try a DRM-free EPUB or a text-based PDF.');
+      alert(`Could not read that file: ${err?.message || err}`);
     } finally {
       setImporting(false);
     }
