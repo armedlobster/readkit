@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { PlusIcon, SettingsIcon } from './Icons.jsx';
-import { listBooks, saveBook, getProgress } from '../db.js';
+import { PlusIcon, SettingsIcon, TrashIcon } from './Icons.jsx';
+import { listBooks, saveBook, getProgress, deleteBook } from '../db.js';
 import { extractEpubWords, extractPdfWords } from '../lib/textExtract.js';
 
 const COVER_STYLES = {
@@ -64,6 +64,13 @@ export default function Library({ onOpenBook, onOpenSettings }) {
     }
   }
 
+  async function handleDelete(book) {
+    const ok = window.confirm(`Delete "${book.title}"? This can't be undone.`);
+    if (!ok) return;
+    await deleteBook(book.id);
+    await refresh();
+  }
+
   return (
     <div className="screen screen-wide" style={{ position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 24px 8px 24px' }}>
@@ -100,47 +107,69 @@ export default function Library({ onOpenBook, onOpenSettings }) {
             const status = pct === 0 ? 'Not started' : pct >= 100 ? 'Finished' : `${pct}%`;
 
             return (
-              <button
-                key={book.id}
-                onClick={() => onOpenBook(book.id)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                  border: 'none',
-                  background: 'transparent',
-                  padding: 4,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-              >
-                <div
+              <div key={book.id} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => onOpenBook(book.id)}
                   style={{
                     width: '100%',
-                    aspectRatio: '2 / 3',
-                    borderRadius: 6,
-                    background: style.bg,
-                    border: `1px solid ${style.border}`,
                     display: 'flex',
-                    alignItems: 'flex-end',
-                    padding: 14,
+                    flexDirection: 'column',
+                    gap: 8,
+                    border: 'none',
+                    background: 'transparent',
+                    padding: 4,
+                    textAlign: 'left',
+                    cursor: 'pointer',
                   }}
                 >
-                  <div className="mono" style={{ fontSize: 11, color: style.label }}>
-                    {book.type.toUpperCase()}
+                  <div
+                    style={{
+                      width: '100%',
+                      aspectRatio: '2 / 3',
+                      borderRadius: 6,
+                      background: style.bg,
+                      border: `1px solid ${style.border}`,
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      padding: 14,
+                    }}
+                  >
+                    <div className="mono" style={{ fontSize: 11, color: style.label }}>
+                      {book.type.toUpperCase()}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.25 }}>{book.title}</div>
-                  {book.author && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{book.author}</div>}
-                </div>
-                <div style={{ height: 3, width: '100%', background: 'var(--surface-2)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)' }} />
-                </div>
-                <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  {status}
-                </div>
-              </button>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.25 }}>{book.title}</div>
+                    {book.author && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{book.author}</div>}
+                  </div>
+                  <div style={{ height: 3, width: '100%', background: 'var(--surface-2)', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)' }} />
+                  </div>
+                  <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    {status}
+                  </div>
+                </button>
+                <button
+                  aria-label={`Delete ${book.title}`}
+                  onClick={() => handleDelete(book)}
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    background: 'rgba(21,21,26,0.72)',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <TrashIcon color="#f2f0ea" />
+                </button>
+              </div>
             );
           })}
         </div>

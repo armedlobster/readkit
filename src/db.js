@@ -1,5 +1,5 @@
 const DB_NAME = 'readkit';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -15,6 +15,10 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains('bookmarks')) {
+        const store = db.createObjectStore('bookmarks', { keyPath: 'id' });
+        store.createIndex('bookId', 'bookId', { unique: false });
       }
     };
 
@@ -82,6 +86,8 @@ export async function saveBook(book) {
 export async function deleteBook(id) {
   await del('books', id);
   await del('progress', id);
+  const marks = await listBookmarks(id);
+  await Promise.all(marks.map((m) => del('bookmarks', m.id)));
 }
 
 // --- Progress ---
@@ -92,6 +98,23 @@ export async function getProgress(bookId) {
 
 export async function saveProgress(bookId, { wordIndex, wpm, chunkSize }) {
   return put('progress', { bookId, wordIndex, wpm, chunkSize, updatedAt: Date.now() });
+}
+
+// --- Bookmarks ---
+
+export async function listBookmarks(bookId) {
+  const all = await getAll('bookmarks');
+  return all.filter((b) => b.bookId === bookId).sort((a, b) => a.wordIndex - b.wordIndex);
+}
+
+export async function addBookmark(bookId, wordIndex, label) {
+  const bookmark = { id: crypto.randomUUID(), bookId, wordIndex, label: label || '', createdAt: Date.now() };
+  await put('bookmarks', bookmark);
+  return bookmark;
+}
+
+export async function deleteBookmark(id) {
+  return del('bookmarks', id);
 }
 
 // --- Settings ---

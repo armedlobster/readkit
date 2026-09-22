@@ -32,15 +32,16 @@ break. `vercel.json` has an SPA rewrite that excludes `assets/`,
 
 ```
 src/
-  App.jsx              screen router (library / reader / settings)
-  db.js                IndexedDB wrapper: books, progress, settings
+  App.jsx              screen router (library / reader / contents / settings)
+  db.js                IndexedDB wrapper: books, progress, bookmarks, settings
   lib/
-    textExtract.js      EPUB/PDF -> word array, ORP pivot, chunking, pause timing
+    textExtract.js       EPUB/PDF -> word array, chapter/page markers, ORP pivot, chunking, pause timing
   components/
-    Library.jsx          book grid + import
-    Reader.jsx            the RSVP playback engine
-    Settings.jsx          display + reading preferences, stats
-    Icons.jsx              shared inline SVG icons
+    Library.jsx           book grid, import, delete
+    Reader.jsx             the RSVP playback engine, bookmarking
+    Contents.jsx           chapter list / page jump / saved bookmarks
+    Settings.jsx           display + reading preferences, stats
+    Icons.jsx               shared inline SVG icons
 ```
 
 ## Known limitations to revisit
@@ -51,6 +52,13 @@ src/
 - The "back/forward one sentence" jump is a regex heuristic
   (`seekSentence` in `Reader.jsx`), not a real sentence parser — it can
   misfire on abbreviations, decimals, etc.
+- EPUB chapters are matched to the book's table of contents by filename;
+  a TOC entry pointing at a fragment within a longer file jumps to the
+  start of that file, not the exact anchor.
+- PDF chapters only show up if the PDF has an embedded outline/bookmark
+  tree (`pdf.getOutline()`); otherwise only page-number jump is available.
+- Books imported before this update won't have chapter/page markers —
+  re-import them to get navigation.
 - "Time saved" stat in Settings is a rough estimate (current pace vs. a
   250 wpm baseline), not a tracked history of actual reading sessions.
 - No cover art extraction yet — covers are solid-color placeholders by

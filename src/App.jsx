@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Library from './components/Library.jsx';
 import Reader from './components/Reader.jsx';
 import Settings from './components/Settings.jsx';
+import Contents from './components/Contents.jsx';
 import { getSettings } from './db.js';
 
 export default function App() {
@@ -17,8 +18,20 @@ export default function App() {
     return (
       <Reader
         bookId={screen.bookId}
+        jumpTo={screen.jumpTo}
         onBack={() => setScreen({ name: 'library' })}
         onOpenSettings={() => setScreen({ name: 'settings', returnTo: { name: 'reader', bookId: screen.bookId } })}
+        onOpenContents={() => setScreen({ name: 'contents', bookId: screen.bookId })}
+      />
+    );
+  }
+
+  if (screen.name === 'contents') {
+    return (
+      <Contents
+        bookId={screen.bookId}
+        onBack={() => setScreen({ name: 'reader', bookId: screen.bookId })}
+        onJump={(wordIndex) => setScreen({ name: 'reader', bookId: screen.bookId, jumpTo: wordIndex })}
       />
     );
   }

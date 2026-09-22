@@ -6,27 +6,87 @@ function tokenize(text) {
     .filter(Boolean);
 }
 
+function hrefFilename(href) {
+  if (!href) return '';
+  return href.split('#')[0].split('/').pop();
+}
+
+function flattenToc(items, depth, spineIndex, out) {
+  for (const item of items || []) {
+    const key = hrefFilename(item.href);
+    const wordIndex = spineIndex[key];
+    if (wordIndex !== undefined) {
+      out.push({ label: (item.label || '').trim() || 'Untitled', wordIndex, depth });
+    }
+    if (item.subitems && item.subitems.length) {
+      flattenToc(item.subitems, depth + 1, spineIndex, out);
+    }
+  }
+  return out;
+}
+
 export async function extractEpubWords(arrayBuffer) {
-  const ePub = (await import('epubjs')).default;
+  // epubjs ships as a Babel-compiled CJS module with a `default` export.
+  // Depending on the runtime's CJS/ESM interop, `import ePub from 'epubjs'`
+  // (or `(await import('epubjs')).default`) can resolve to the whole module
+  // object instead of the actual function — unwrap defensively either way.
+  const epubModule = await import('epubjs');
+  const ePub = typeof epubModule.default === 'function' ? epubModule.default : epubModule.default.default;
+  if (typeof ePub !== 'function') {
+    throw new Error('epubjs did not load correctly (unexpected module shape)');
+  }
+
   const book = ePub(arrayBuffer);
   await book.ready;
 
   const spineItems = book.spine.spineItems;
-  let fullText = '';
+  const spineIndex = {}; // filename (no fragment) -> starting word index
+  const allWords = [];
 
   for (const item of spineItems) {
+    spineIndex[hrefFilename(item.href)] = allWords.length;
     const doc = await item.load(book.load.bind(book));
-    fullText += ' ' + (doc?.body?.textContent || '');
+    // XHTML sections parse as an XMLDocument, which has no `.body` shortcut
+    // (that's an HTMLDocument-only convenience) — query for it explicitly,
+    // falling back to the whole document if that somehow comes up empty.
+    const bodyEl = doc?.querySelector?.('body') || doc?.body;
+    const text = bodyEl?.textContent || doc?.documentElement?.textContent || '';
+    allWords.push(...tokenize(text));
     item.unload();
   }
 
   const metadata = book.packaging?.metadata || book.package?.metadata || {};
+  const chapters = flattenToc(book.navigation?.toc, 0, spineIndex, []);
 
   return {
-    words: tokenize(fullText),
+    words: allWords,
     title: metadata.title || null,
     author: metadata.creator || null,
+    chapters,
   };
+}
+
+async function flattenPdfOutline(items, depth, pdf, pageStarts, out) {
+  for (const item of items || []) {
+    let pageIndex = null;
+    try {
+      if (item.dest) {
+        const dest = typeof item.dest === 'string' ? await pdf.getDestination(item.dest) : item.dest;
+        if (dest && dest[0] != null) {
+          pageIndex = await pdf.getPageIndex(dest[0]);
+        }
+      }
+    } catch {
+      pageIndex = null;
+    }
+    if (pageIndex !== null && pageStarts[pageIndex] !== undefined) {
+      out.push({ label: item.title?.trim() || 'Untitled', wordIndex: pageStarts[pageIndex], depth, page: pageIndex + 1 });
+    }
+    if (item.items && item.items.length) {
+      await flattenPdfOutline(item.items, depth + 1, pdf, pageStarts, out);
+    }
+  }
+  return out;
 }
 
 export async function extractPdfWords(arrayBuffer) {
@@ -37,15 +97,27 @@ export async function extractPdfWords(arrayBuffer) {
   ).href;
 
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = '';
+  const allWords = [];
+  const pageStarts = []; // pageStarts[i] = word index where page (i+1) begins
 
   for (let i = 1; i <= pdf.numPages; i++) {
+    pageStarts.push(allWords.length);
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    fullText += ' ' + content.items.map((it) => it.str).join(' ');
+    allWords.push(...tokenize(content.items.map((it) => it.str).join(' ')));
   }
 
-  return { words: tokenize(fullText), title: null, author: null, pageCount: pdf.numPages };
+  let chapters = [];
+  try {
+    const outline = await pdf.getOutline();
+    if (outline?.length) {
+      chapters = await flattenPdfOutline(outline, 0, pdf, pageStarts, []);
+    }
+  } catch {
+    chapters = [];
+  }
+
+  return { words: allWords, title: null, author: null, pageCount: pdf.numPages, pageStarts, chapters };
 }
 
 // Optimal recognition point: which letter index to highlight, by word length.

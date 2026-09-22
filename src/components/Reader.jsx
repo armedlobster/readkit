@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BackIcon, SettingsIcon, PlayIcon, PauseIcon, PrevIcon, NextIcon } from './Icons.jsx';
-import { getBook, getProgress, saveProgress, getSettings } from '../db.js';
+import { BackIcon, SettingsIcon, PlayIcon, PauseIcon, PrevIcon, NextIcon, ListIcon, BookmarkIcon } from './Icons.jsx';
+import { getBook, getProgress, saveProgress, getSettings, addBookmark } from '../db.js';
 import { orpIndex, pauseMultiplier } from '../lib/textExtract.js';
 
 function seekSentence(words, fromIndex, direction) {
@@ -14,7 +14,7 @@ function seekSentence(words, fromIndex, direction) {
   return Math.min(words.length - 1, i + 1);
 }
 
-export default function Reader({ bookId, onBack, onOpenSettings }) {
+export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenContents }) {
   const [book, setBook] = useState(null);
   const [wordIndex, setWordIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -23,6 +23,7 @@ export default function Reader({ bookId, onBack, onOpenSettings }) {
   const [pausePunctuation, setPausePunctuation] = useState(true);
   const [highlightFocus, setHighlightFocus] = useState(true);
   const [wordSize, setWordSize] = useState(52);
+  const [savedFlash, setSavedFlash] = useState(false);
   const lastSavedRef = useRef(0);
 
   useEffect(() => {
@@ -42,6 +43,14 @@ export default function Reader({ bookId, onBack, onOpenSettings }) {
       cancelled = true;
     };
   }, [bookId]);
+
+  // Jumping in from Contents/Bookmarks (a chapter, a page, a saved spot).
+  useEffect(() => {
+    if (jumpTo != null) {
+      setWordIndex(jumpTo);
+      setPlaying(false);
+    }
+  }, [jumpTo]);
 
   const words = book?.words ?? [];
   const totalWords = book?.totalWords ?? 0;
@@ -84,18 +93,38 @@ export default function Reader({ bookId, onBack, onOpenSettings }) {
 
   const progressPct = totalWords ? Math.min(100, (wordIndex / totalWords) * 100) : 0;
 
+  async function handleAddBookmark() {
+    const label = words.slice(wordIndex, wordIndex + 6).join(' ').trim() || 'Bookmark';
+    await addBookmark(bookId, wordIndex, label);
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1400);
+  }
+
+  function openContents() {
+    saveProgress(bookId, { wordIndex, wpm, chunkSize });
+    onOpenContents();
+  }
+
   return (
     <div className="screen">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 12px 16px' }}>
         <button className="icon-btn" aria-label="Back to library" onClick={onBack}>
           <BackIcon color="var(--text)" />
         </button>
-        <div className="mono" style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {book.title}
+        <div className="mono" style={{ fontSize: 13, color: 'var(--text-muted)', flexGrow: 1, minWidth: 0, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 8px' }}>
+          {savedFlash ? 'Bookmark saved' : book.title}
         </div>
-        <button className="icon-btn" aria-label="Settings" onClick={onOpenSettings}>
-          <SettingsIcon color="var(--text-muted)" />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <button className="icon-btn" aria-label="Save bookmark here" onClick={handleAddBookmark} style={{ width: 40, height: 40 }}>
+            <BookmarkIcon color={savedFlash ? 'var(--accent)' : 'var(--text-muted)'} filled={savedFlash} />
+          </button>
+          <button className="icon-btn" aria-label="Contents and bookmarks" onClick={openContents} style={{ width: 40, height: 40 }}>
+            <ListIcon color="var(--text-muted)" />
+          </button>
+          <button className="icon-btn" aria-label="Settings" onClick={onOpenSettings} style={{ width: 40, height: 40 }}>
+            <SettingsIcon color="var(--text-muted)" />
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '0 20px' }}>
