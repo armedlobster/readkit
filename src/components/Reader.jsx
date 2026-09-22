@@ -50,25 +50,21 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
       const [b, progress, settings] = await Promise.all([getBook(bookId), getProgress(bookId), getSettings()]);
       if (cancelled || !b) return;
       setBook(b);
-      setWordIndex(progress?.wordIndex ?? 0);
+      // A jump from Contents/Bookmarks always wins over the last saved spot —
+      // otherwise this load (which reads the *old* saved progress) can finish
+      // after the jump and silently snap back to where you were.
+      setWordIndex(jumpTo != null ? jumpTo : progress?.wordIndex ?? 0);
       setWpm(progress?.wpm ?? settings.defaultWpm);
       setChunkSize(progress?.chunkSize ?? settings.defaultChunkSize);
       setPausePunctuation(settings.pausePunctuation);
       setHighlightFocus(settings.highlightFocus);
       setWordSize(settings.wordSize);
+      setPlaying(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [bookId]);
-
-  // Jumping in from Contents/Bookmarks (a chapter, a page, a saved spot).
-  useEffect(() => {
-    if (jumpTo != null) {
-      setWordIndex(jumpTo);
-      setPlaying(false);
-    }
-  }, [jumpTo]);
+  }, [bookId, jumpTo]);
 
   const words = book?.words ?? [];
   const totalWords = book?.totalWords ?? 0;
