@@ -159,53 +159,98 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
       </div>
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '0 24px' }}>
-        <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
         {finished ? (
-          <div className="mono" style={{ fontSize: 22, color: 'var(--text-muted)' }}>
-            Finished
-          </div>
+          <>
+            <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
+            <div className="mono" style={{ fontSize: 22, color: 'var(--text-muted)' }}>
+              Finished
+            </div>
+            <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
+          </>
         ) : chunkSize === 1 && highlightFocus ? (
           <div
             className="mono"
             style={{
-              // Fixed-width columns (monospace 'ch' units) pin the highlighted
-              // letter to one exact spot on screen — the word grows unevenly
-              // left/right around it, rather than the whole word being centered
-              // (which would make the highlighted letter itself drift).
+              // The two side columns share the available width on a fixed
+              // ratio (not by content length), so the highlighted letter
+              // always lands at the same fraction of the reading width —
+              // slightly left of true center, which is the easier fixation
+              // point to read around. The tick marks sit in the same grid
+              // column as the letter, so they stay aligned with it.
               display: 'grid',
-              gridTemplateColumns: '6.5ch auto 10ch',
-              alignItems: 'baseline',
+              gridTemplateColumns: '42fr auto 58fr',
+              gridTemplateRows: 'auto auto auto',
+              alignItems: 'center',
+              justifyItems: 'center',
               width: '100%',
-              fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
-              fontWeight: 500,
-              letterSpacing: '0.01em',
+              rowGap: 14,
             }}
           >
-            <span style={{ textAlign: 'right', whiteSpace: 'nowrap', minWidth: 0, overflow: 'visible' }}>
+            <div style={{ gridColumn: 2, gridRow: 1, width: 2, height: 14, background: 'var(--border)' }} />
+            <span
+              style={{
+                gridColumn: 1,
+                gridRow: 2,
+                textAlign: 'right',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                overflow: 'visible',
+                fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
+                fontWeight: 500,
+                letterSpacing: '0.01em',
+              }}
+            >
               {currentChunk[0]?.slice(0, orpIndex(currentChunk[0] || ''))}
             </span>
-            <span style={{ textAlign: 'center', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                gridColumn: 2,
+                gridRow: 2,
+                textAlign: 'center',
+                color: 'var(--accent)',
+                whiteSpace: 'nowrap',
+                fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
+                fontWeight: 500,
+                letterSpacing: '0.01em',
+              }}
+            >
               {currentChunk[0]?.charAt(orpIndex(currentChunk[0] || ''))}
             </span>
-            <span style={{ textAlign: 'left', whiteSpace: 'nowrap', minWidth: 0, overflow: 'visible' }}>
+            <span
+              style={{
+                gridColumn: 3,
+                gridRow: 2,
+                textAlign: 'left',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                overflow: 'visible',
+                fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
+                fontWeight: 500,
+                letterSpacing: '0.01em',
+              }}
+            >
               {currentChunk[0]?.slice(orpIndex(currentChunk[0] || '') + 1)}
             </span>
+            <div style={{ gridColumn: 2, gridRow: 3, width: 2, height: 14, background: 'var(--border)' }} />
           </div>
         ) : (
-          <div
-            className="mono"
-            style={{
-              fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
-              fontWeight: 500,
-              letterSpacing: '0.01em',
-              textAlign: 'center',
-              wordBreak: 'break-word',
-            }}
-          >
-            {currentChunk.join(' ')}
-          </div>
+          <>
+            <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
+            <div
+              className="mono"
+              style={{
+                fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
+                fontWeight: 500,
+                letterSpacing: '0.01em',
+                textAlign: 'center',
+                wordBreak: 'break-word',
+              }}
+            >
+              {currentChunk.join(' ')}
+            </div>
+            <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
+          </>
         )}
-        <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
         <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
           {hasPages && `page ${currentPage} of ${pageStarts.length} · `}
           word {Math.min(wordIndex + 1, totalWords).toLocaleString()} of {totalWords.toLocaleString()}
