@@ -164,12 +164,37 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
           <div className="mono" style={{ fontSize: 22, color: 'var(--text-muted)' }}>
             Finished
           </div>
+        ) : chunkSize === 1 && highlightFocus ? (
+          <div
+            className="mono"
+            style={{
+              // Fixed-width columns (monospace 'ch' units) pin the highlighted
+              // letter to one exact spot on screen — the word grows unevenly
+              // left/right around it, rather than the whole word being centered
+              // (which would make the highlighted letter itself drift).
+              display: 'grid',
+              gridTemplateColumns: '6.5ch auto 10ch',
+              alignItems: 'baseline',
+              width: '100%',
+              fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
+              fontWeight: 500,
+              letterSpacing: '0.01em',
+            }}
+          >
+            <span style={{ textAlign: 'right', whiteSpace: 'nowrap', minWidth: 0, overflow: 'visible' }}>
+              {currentChunk[0]?.slice(0, orpIndex(currentChunk[0] || ''))}
+            </span>
+            <span style={{ textAlign: 'center', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+              {currentChunk[0]?.charAt(orpIndex(currentChunk[0] || ''))}
+            </span>
+            <span style={{ textAlign: 'left', whiteSpace: 'nowrap', minWidth: 0, overflow: 'visible' }}>
+              {currentChunk[0]?.slice(orpIndex(currentChunk[0] || '') + 1)}
+            </span>
+          </div>
         ) : (
           <div
             className="mono"
             style={{
-              // Scales up on wider viewports (tablets held further away) while
-              // never dropping below the user's chosen size or the readable floor.
               fontSize: `clamp(${wordSize}px, ${wordSize}px + 2vw, ${Math.round(wordSize * 1.6)}px)`,
               fontWeight: 500,
               letterSpacing: '0.01em',
@@ -177,15 +202,7 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
               wordBreak: 'break-word',
             }}
           >
-            {chunkSize === 1 && highlightFocus ? (
-              <>
-                {currentChunk[0]?.slice(0, orpIndex(currentChunk[0] || ''))}
-                <span style={{ color: 'var(--accent)' }}>{currentChunk[0]?.charAt(orpIndex(currentChunk[0] || ''))}</span>
-                {currentChunk[0]?.slice(orpIndex(currentChunk[0] || '') + 1)}
-              </>
-            ) : (
-              currentChunk.join(' ')
-            )}
+            {currentChunk.join(' ')}
           </div>
         )}
         <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
