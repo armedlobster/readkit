@@ -32,6 +32,16 @@ function seekPage(pageStarts, fromIndex, direction) {
   return pageStarts[target];
 }
 
+// Which chapter (by index into book.chapters) the given word position falls in.
+function chapterAt(chapters, wordIndex) {
+  let idx = -1;
+  for (let i = 0; i < chapters.length; i++) {
+    if (chapters[i].wordIndex <= wordIndex) idx = i;
+    else break;
+  }
+  return idx;
+}
+
 export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenContents }) {
   const [book, setBook] = useState(null);
   const [wordIndex, setWordIndex] = useState(0);
@@ -70,9 +80,21 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
   const totalWords = book?.totalWords ?? 0;
   const pageStarts = book?.pageStarts;
   const hasPages = book?.type === 'pdf' && Array.isArray(pageStarts) && pageStarts.length > 0;
+  const chapters = book?.chapters ?? [];
   const currentChunk = useMemo(() => words.slice(wordIndex, wordIndex + chunkSize), [words, wordIndex, chunkSize]);
   const finished = totalWords > 0 && wordIndex >= totalWords;
   const currentPage = hasPages ? pageAt(pageStarts, wordIndex) + 1 : null;
+
+  const chapterInfo = useMemo(() => {
+    if (!chapters.length) return null;
+    const idx = chapterAt(chapters, wordIndex);
+    if (idx === -1) return null;
+    const start = chapters[idx].wordIndex;
+    const end = idx + 1 < chapters.length ? chapters[idx + 1].wordIndex : totalWords;
+    const percent = end > start ? Math.min(100, Math.round(((wordIndex - start) / (end - start)) * 100)) : 100;
+    const next = idx + 1 < chapters.length ? chapters[idx + 1] : null;
+    return { number: idx + 1, total: chapters.length, percent, next };
+  }, [chapters, wordIndex, totalWords]);
 
   // Playback loop.
   useEffect(() => {
@@ -158,7 +180,22 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
         ))}
       </div>
 
-      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '0 24px' }}>
+      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '0 24px', position: 'relative' }}>
+        {chapterInfo && (
+          <div className="mono" style={{ position: 'absolute', top: 4, right: 4, textAlign: 'right', color: 'var(--text-muted)', fontSize: 11, lineHeight: 1.5, pointerEvents: 'none' }}>
+            <div>
+              ch {chapterInfo.number}/{chapterInfo.total} · {chapterInfo.percent}%
+            </div>
+            {chapterInfo.next && (
+              <div>
+                next:{' '}
+                {hasPages && chapterInfo.next.page
+                  ? `${Math.max(0, chapterInfo.next.page - (currentPage || 1))} pages`
+                  : `${(chapterInfo.next.wordIndex - wordIndex).toLocaleString()} words`}
+              </div>
+            )}
+          </div>
+        )}
         {finished ? (
           <>
             <div style={{ width: 2, height: 14, background: 'var(--border)' }} />
@@ -252,7 +289,7 @@ export default function Reader({ bookId, jumpTo, onBack, onOpenSettings, onOpenC
         )}
         <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
           {hasPages && `page ${currentPage} of ${pageStarts.length} · `}
-          word {Math.min(wordIndex + 1, totalWords).toLocaleString()} of {totalWords.toLocaleString()}
+          word {Math.min(wordIndex + 1, totalWords).toLocaleString()} of {totalWords.toLocaleString()} · {Math.round(progressPct)}% of book
         </div>
       </div>
 

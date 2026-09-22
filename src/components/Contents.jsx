@@ -69,7 +69,14 @@ export default function Contents({ bookId, onBack, onJump }) {
                   }}
                 >
                   {ch.label}
-                  {ch.page && <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}> · p.{ch.page}</span>}
+                  {ch.page ? (
+                    <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}> · p.{ch.page}</span>
+                  ) : (
+                    <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                      {' '}
+                      · {Math.round((ch.wordIndex / (book.totalWords || 1)) * 100)}%
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
