@@ -1,0 +1,25 @@
+{
+  "name": "ReadKit",
+  "short_name": "ReadKit",
+  "description": "A rapid word-at-a-time EPUB and PDF reader.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#15151a",
+  "theme_color": "#15151a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

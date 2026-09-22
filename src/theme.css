@@ -1,0 +1,124 @@
+:root {
+  --bg: #15151a;
+  --surface: #1f1f26;
+  --surface-2: #26262f;
+  --border: #33333d;
+  --text: #f2f0ea;
+  --text-muted: #8b8a94;
+  --accent: #e08a4f;
+  --accent-strong: #eb9a63;
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+:root[data-theme='light'] {
+  --bg: #faf9f5;
+  --surface: #f0eee6;
+  --surface-2: #e7e4da;
+  --border: #d8d4c8;
+  --text: #17171a;
+  --text-muted: #6b6a63;
+  --accent: #c26a35;
+  --accent-strong: #b05c2b;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.screen {
+  height: 100%;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Reader and Settings stay a comfortable reading column even on a tablet —
+   a wider strip doesn't help a single centered word or a settings list. */
+@media (min-width: 700px) {
+  .screen:not(.screen-wide) {
+    max-width: 560px;
+  }
+}
+
+/* Library uses the extra tablet width for more grid columns instead. */
+.screen.screen-wide {
+  max-width: 480px;
+}
+@media (min-width: 700px) {
+  .screen.screen-wide {
+    max-width: 760px;
+  }
+}
+@media (min-width: 1000px) {
+  .screen.screen-wide {
+    max-width: 960px;
+  }
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--surface);
+}
+
+.chip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
